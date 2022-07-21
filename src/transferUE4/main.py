@@ -24,7 +24,7 @@ except ImportError:
     from PySide.QtGui import *
     from PySide import QtWidgets
 
-currentPath = r"E:/work_ref/transferUE4/transferUE4"
+currentPath = r"Y:/serverprogram/maya/transferUE4/transferUE4"
 uiPath = os.path.join(currentPath, "transferUE4.ui")
 subUiPath = os.path.join(currentPath, "checkFiles.ui")
 iconsPath = os.path.join(currentPath,"icons")
@@ -704,7 +704,54 @@ class mainWin(QtWidgets.QDialog):
         self.loader.assetTW.setItemExpanded(self.loader.assetTW.currentItem(),True)
         return
 
+    def loadSubChildShot(self):
+        count = self.loader.shotTW.currentItem().childCount()
+        if count > 0:
+            return
+        onePath = self.loader.shotTW.currentItem().text(1)
+        fileDict = self.collectAllFiles(["ma","mb","fbx"],onePath,2)
+        self.addChildren(fileDict, self.loader.shotTW.currentItem())
+        self.loader.shotTW.setItemExpanded(self.loader.shotTW.currentItem(),True)
+        return
+
     def loadSubShot(self):
+        cItem = self.loader.shotTW.currentItem()
+        cPath = cItem.text(1)
+        cDir = cItem.text(0)
+        #print(cPath,cDir)
+        if os.path.isdir(cPath) and cDir[:2] == "ep":
+            self.loadOneSeq('sc')
+        elif os.path.isdir(cPath) and cDir[:2] == "sc":
+            self.loadOneSeq('sh')
+        elif os.path.isdir(cPath) and cDir[:2] == "sh":
+            self.loadSubChildShot()
+        return
+
+    def loadOneSeq(self,head):
+        epItem = self.loader.shotTW.currentItem()
+        top = self.loader.shotTW.indexOfTopLevelItem(epItem)
+        if top==-1 and head =='ep':
+            return
+        count = epItem.childCount()
+        if count > 0:
+            return
+        #epPath = os.path.join(projPath,currentProject,"\\".join(shotPaths))
+        epPath = epItem.text(1)
+        #print(epItem,epPath)
+        if not os.path.isdir(epPath):
+            mc.confirmDialog(title="Error",button="Yes",icon="error",
+            message="需要一个正确的镜头路径! {0}".format(epPath))
+            return
+        directoryL = os.listdir(epPath)
+        for directory in directoryL:
+            if os.path.isdir(os.path.join(epPath,directory)) and directory[:2] == head:
+                item = QtWidgets.QTreeWidgetItem([directory,os.path.join(epPath,directory)])
+                #self.collectAllFiles("mb",os.path.join(kindPath,directory))
+                item.setIcon(0, self.style().standardIcon(QtWidgets.QStyle.SP_DirIcon))
+                #self.addChildren(item, self.loader.shotTW.currentItem())
+                epItem.addChild(item)
+        self.loader.shotTW.setItemExpanded(epItem,True)
+        '''
         top = self.loader.shotTW.indexOfTopLevelItem(self.loader.shotTW.currentItem())
         if top==-1:
             return
@@ -715,6 +762,7 @@ class mainWin(QtWidgets.QDialog):
         fileDict = self.collectAllFiles(["ma","mb","fbx"],onePath,3)
         self.addChildren(fileDict, self.loader.shotTW.currentItem())
         self.loader.shotTW.setItemExpanded(self.loader.shotTW.currentItem(),True)
+        '''
         return
 
     def loadAsset(self):
